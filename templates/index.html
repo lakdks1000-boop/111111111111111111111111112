@@ -3,17 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VAXIS - Premium Dashboard</title>
+    <title>VAXIS - Partner Automation Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Jua', sans-serif; }
         body {
             background: linear-gradient(to right, #24243e, #302b63, #0f0c29);
-            color: #fff;
-            overflow-x: hidden;
-            min-height: 100vh;
+            color: #fff; overflow-x: hidden; min-height: 100vh;
         }
-        /* 버블 배경 */
         .bubbles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
         .bubble {
             position: absolute; bottom: -100px; background: rgba(255, 255, 255, 0.15);
@@ -28,7 +25,6 @@
             100% { transform: translateY(-120vh) scale(1.5); opacity: 0; }
         }
 
-        /* 네비게이션바 */
         nav {
             display: flex; justify-content: space-between; align-items: center;
             padding: 20px 40px; background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px);
@@ -44,26 +40,6 @@
         .logout-btn { background: #ed4245; }
         .login-btn:hover, .logout-btn:hover { opacity: 0.8; transform: translateY(-2px); }
 
-        /* 햄버거 메뉴 */
-        .hamburger { cursor: pointer; display: flex; flex-direction: column; gap: 6px; z-index: 1000; }
-        .hamburger div { width: 30px; height: 4px; background-color: #fff; border-radius: 5px; transition: 0.4s; }
-        .hamburger.active div:nth-child(1) { transform: rotate(-45deg) translate(-7px, 7px); }
-        .hamburger.active div:nth-child(2) { opacity: 0; }
-        .hamburger.active div:nth-child(3) { transform: rotate(45deg) translate(-7px, -7px); }
-
-        .sidebar {
-            position: fixed; top: 0; right: -250px; width: 250px; height: 100vh;
-            background: rgba(15, 12, 41, 0.95); box-shadow: -5px 0 15px rgba(0,0,0,0.5);
-            display: flex; flex-direction: column; padding-top: 80px; transition: right 0.4s ease; z-index: 999;
-        }
-        .sidebar.active { right: 0; }
-        .sidebar a {
-            color: #fff; text-decoration: none; padding: 20px; font-size: 20px;
-            transition: 0.3s; border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        .sidebar a:hover { background: rgba(255, 255, 255, 0.1); padding-left: 30px; color: #00f2fe; }
-
-        /* 컨테이너 */
         .container {
             max-width: 900px; margin: 40px auto; padding: 40px;
             background: rgba(255, 255, 255, 0.05); border-radius: 20px;
@@ -72,33 +48,31 @@
         }
         h1 { font-size: 34px; margin-bottom: 25px; text-shadow: 0 0 10px rgba(0,242,254,0.5); }
         
-        .input-group { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; }
-        input[type="text"] {
-            padding: 15px 25px; border-radius: 30px; border: none; outline: none;
+        .input-group { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; text-align: left; }
+        label { font-size: 16px; color: #00f2fe; margin-left: 10px; }
+        input[type="text"], textarea, select {
+            width: 100%; padding: 15px 25px; border-radius: 20px; border: none; outline: none;
             font-size: 16px; background: rgba(255,255,255,0.1); color: #fff;
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); transition: 0.3s;
         }
-        input[type="text"]:focus { background: rgba(255,255,255,0.2); box-shadow: 0 0 15px rgba(0, 242, 254, 0.5); }
+        textarea { resize: vertical; min-height: 100px; }
+        select option { background: #24243e; color: #fff; }
+        input:focus, textarea:focus, select:focus { background: rgba(255,255,255,0.2); box-shadow: 0 0 15px rgba(0, 242, 254, 0.5); }
         
         button {
-            padding: 15px 35px; border: none; border-radius: 30px;
+            width: 100%; padding: 15px; border: none; border-radius: 30px;
             background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
             color: white; font-size: 18px; cursor: pointer; transition: 0.2s;
-            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.4);
+            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.4); margin-top: 10px;
         }
         button:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0, 242, 254, 0.6); }
 
-        /* --- 실시간 디스코드 프리뷰 스타일 --- */
         .discord-preview {
             background: #313338; border-radius: 8px; padding: 15px; text-align: left;
             margin-top: 25px; border-left: 4px solid #5865F2; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
         }
-        .discord-header { font-size: 14px; color: #949ba4; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
-        .discord-embed {
-            background: #2b2d31; border-radius: 4px; padding: 12px; border-left: 4px solid #00f2fe;
-        }
-        .embed-title { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 5px; }
-        .embed-desc { font-size: 14px; color: #dbdee1; }
+        .discord-header { font-size: 14px; color: #949ba4; margin-bottom: 8px; }
+        .discord-content { font-size: 15px; color: #dbdee1; white-space: pre-wrap; word-break: break-all; }
 
         .result-card {
             display: none; margin-top: 25px; padding: 25px; background: rgba(0, 0, 0, 0.4);
@@ -106,9 +80,6 @@
         }
         .result-item { margin-bottom: 10px; font-size: 18px; }
         .result-item span { color: #00f2fe; }
-
-        .page-section { display: none; }
-        .page-section.active { display: block; }
     </style>
 </head>
 <body>
@@ -127,51 +98,45 @@
             {% else %}
                 <a href="/login" class="login-btn">Discord 로그인</a>
             {% endif %}
-            <div class="hamburger" onclick="toggleMenu()">
-                <div></div><div></div><div></div>
-            </div>
         </div>
     </nav>
 
-    <div class="sidebar" id="sidebar">
-        <a href="#" onclick="switchPage('home')">🏠 홈화면</a>
-        <a href="#" onclick="switchPage('webhook')">📡 보낸정보 확인하기</a>
-    </div>
-
-    <!-- 홈 페이지 -->
-    <div id="home" class="container page-section active">
-        <h1>VAXIS 파트너 자동화 시스템</h1>
-        <p style="font-size: 20px; line-height: 1.6; color: #ddd;">
-            Discord OAuth2 인증 기반의 완벽히 독립된 세션 관리와<br>
-            실시간 임베드 프리뷰 기능을 경험해보세요!
-        </p>
-    </div>
-
-    <!-- 웹훅 확인 및 파트너 자동생성 페이지 -->
-    <div id="webhook" class="container page-section">
-        <h1>파트너 자동생성 및 웹훅 관리</h1>
+    <div class="container">
+        <h1>파트너 자동생성 및 주기적 메시지 관리</h1>
         {% if user %}
         <div class="input-group">
-            <input type="text" id="webhookInput" placeholder="디스코드 웹훅 URL 입력..." autocomplete="off">
-            <!-- 입력할 때마다 실시간으로 디스코드 창에 반영됨 -->
-            <input type="text" id="partnerInput" placeholder="생성할 파트너명 입력..." autocomplete="off" oninput="updatePreview(this.value)">
-            <button onclick="checkWebhook()">파트너 자동생성 및 상태 조회</button>
+            <label>정보웹훅입력</label>
+            <input type="text" id="webhookInput" placeholder="디스코드 정보웹훅 URL을 입력하세요..." autocomplete="off">
+            
+            <label>파트너명 입력</label>
+            <input type="text" id="partnerInput" placeholder="생성할 파트너명을 입력하세요..." autocomplete="off">
+            
+            <label>파트너에게 보낼 메시지 (특수문자/이모지/줄바꿈 지원)</label>
+            <textarea id="messageInput" placeholder="보낼 내용을 자유롭게 적어주세요 (특수문자 및 줄바꿈 완벽 지원)..." oninput="updatePreview(this.value)"></textarea>
+
+            <label>발송 시간 주기 설정</label>
+            <select id="intervalInput">
+                <option value="0.5">30분 주기</option>
+                <option value="1">1시간 주기</option>
+                <option value="6">6시간 주기</option>
+                <option value="12">12시간 주기</option>
+                <option value="24" selected>24시간 주기 (기본)</option>
+            </select>
+
+            <button onclick="checkWebhook()">파트너 자동생성 및 자동발송 시작</button>
         </div>
 
-        <!-- 실시간 디스코드 프리뷰 박스 -->
+        <!-- 실시간 디스코드 채팅 프리뷰 -->
         <div class="discord-preview">
-            <div class="discord-header">💬 실시간 디스코드 채널 프리뷰 미리보기</div>
-            <div class="discord-embed">
-                <div class="embed-title" id="previewTitle">파트너명 대기중...</div>
-                <div class="embed-desc">상태: <b>자동 채널 생성 대기 중 및 연동 준비 완료</b></div>
-            </div>
+            <div class="discord-header">💬 실시간 디스코드 채팅창 미리보기</div>
+            <div class="discord-content" id="previewContent">메시지를 입력하면 실시간으로 여기에 표시됩니다...</div>
         </div>
 
         <div class="result-card" id="resultCard">
-            <div class="result-item">🤝 생성된 파트너: <span id="resPartner"></span></div>
+            <div class="result-item">🤝 파트너명: <span id="resPartner"></span></div>
             <div class="result-item">📌 자동 채널명: <span id="resChannel"></span></div>
-            <div class="result-item">🕒 최근 발송일: <span id="resDate"></span></div>
-            <div class="result-item">⚠️ 발송 실패 서버: <span id="resFail"></span></div>
+            <div class="result-item">⏱️ 발송 주기: <span id="resInterval"></span></div>
+            <div class="result-item">🕒 최초 발송일: <span id="resDate"></span></div>
         </div>
         {% else %}
         <p style="font-size: 20px; color: #ff6b6b; margin-top: 20px;">
@@ -181,34 +146,24 @@
     </div>
 
     <script>
-        function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.querySelector('.hamburger').classList.toggle('active');
-        }
-
-        function switchPage(pageId) {
-            document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-            toggleMenu();
-        }
-
-        // 실시간 디스코드 임베드 프리뷰 업데이트 함수
         function updatePreview(val) {
-            const titleElem = document.getElementById('previewTitle');
+            const preview = document.getElementById('previewContent');
             if(val.trim() === "") {
-                titleElem.innerText = "파트너명 대기중...";
+                preview.innerText = "메시지를 입력하면 실시간으로 여기에 표시됩니다...";
             } else {
-                titleElem.innerText = `[PARTNER] ${val}`;
+                preview.innerText = val;
             }
         }
 
         async function checkWebhook() {
-            const urlInput = document.getElementById('webhookInput').value;
-            const partnerInput = document.getElementById('partnerInput').value;
+            const webhook_url = document.getElementById('webhookInput').value;
+            const partner_name = document.getElementById('partnerInput').value;
+            const message_content = document.getElementById('messageInput').value;
+            const interval_hours = document.getElementById('intervalInput').value;
             const resultCard = document.getElementById('resultCard');
 
-            if(!urlInput || !partnerInput) {
-                alert("웹훅 URL과 파트너명을 모두 입력해주세요!");
+            if(!webhook_url || !partner_name || !message_content) {
+                alert("모든 필드를 빠짐없이 입력해주세요!");
                 return;
             }
 
@@ -216,7 +171,7 @@
                 const response = await fetch('/api/webhook_info', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ webhook_url: urlInput, partner_name: partnerInput })
+                    body: JSON.stringify({ webhook_url, partner_name, message_content, interval_hours })
                 });
                 
                 const data = await response.json();
@@ -230,9 +185,10 @@
                 if(data.success) {
                     document.getElementById('resPartner').innerText = data.partner_name;
                     document.getElementById('resChannel').innerText = data.channel_name;
+                    document.getElementById('resInterval').innerText = data.interval_text;
                     document.getElementById('resDate').innerText = data.last_sent;
-                    document.getElementById('resFail').innerText = data.failed_servers;
                     resultCard.style.display = 'block';
+                    alert("성공적으로 웹훅이 연동되었으며 즉시 1회 발송 및 주기적 자동발송이 시작되었습니다!");
                 } else {
                     alert(data.error || "오류가 발생했습니다.");
                 }
