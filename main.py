@@ -12,9 +12,10 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 
 # Discord OAuth2 설정 (환경 변수 필요)
-CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID")
-CLIENT_SECRET = os.environ.get("DISCORD_CLIENT_SECRET")
-REDIRECT_URI = os.environ.get("DISCORD_REDIRECT_URI") # 예: https://your-app.onrender.com/callback
+# Discord OAuth2 설정 (환경 변수가 없어도 직접 대입되도록 수정)
+CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID") or "여기에_디스코드_클라이언트_ID를_직접넣으세요"
+CLIENT_SECRET = os.environ.get("DISCORD_CLIENT_SECRET") or "여기에_시크릿키를_직접넣으세요"
+REDIRECT_URI = os.environ.get("DISCORD_REDIRECT_URI") or "https://one11111111111111111111111112.onrender.com/callback"
 API_ENDPOINT = "https://discord.com/api/v10"
 
 # 사용자별 데이터베이스 (실제 운영 시 MongoDB 등과 연동)
