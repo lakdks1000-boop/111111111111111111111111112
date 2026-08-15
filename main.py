@@ -5,29 +5,27 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 import threading
 import os
 import requests
+import time
 from datetime import datetime
 
 # --- Flask 설정 ---
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 
-# Discord OAuth2 설정 (환경 변수 필요)
-# Discord OAuth2 설정 (환경 변수가 없어도 직접 대입되도록 수정)
+# Discord OAuth2 설정 (본인의 클라이언트 ID와 시크릿을 입력하세요)
 CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID") or "1538062452749631609"
 CLIENT_SECRET = os.environ.get("DISCORD_CLIENT_SECRET") or "e6wfF_iitYum2KrZUmeJQwv94lppRlUq"
 REDIRECT_URI = os.environ.get("DISCORD_REDIRECT_URI") or "https://one11111111111111111111111112.onrender.com/callback"
 API_ENDPOINT = "https://discord.com/api/v10"
 
-# 사용자별 데이터베이스 (실제 운영 시 MongoDB 등과 연동)
-user_database = {}
+# 데이터 저장을 위한 메모리 구조 (서버 설정 및 활성 웹훅 작업 관리)
+server_settings = {}  # guild_id: category_id
+active_webhooks = []  # 주기적 발송을 위한 웹훅 작업 리스트
 
 # --- Discord 봇 설정 ---
 class VaxisBot(commands.Bot):
     def __init__(self):
-        token = os.environ.get("BOT_TOKEN")
-        if not token:
-            print("[오류] BOT_TOKEN 환경 변수가 설정되지 않았습니다!")
-        
+        token = os.environ.get("BOT_TOKEN") or "YOUR_BOT_TOKEN"
         intents = discord.Intents.default()
         intents.guilds = True
         intents.webhooks = True
@@ -40,42 +38,51 @@ class VaxisBot(commands.Bot):
 
 bot = VaxisBot()
 
-# --- Discord 버튼 UI ---
-class WebhookInfoView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
+# --- 백그라운드 자동 반복 전송 스레드 ---
+def background_webhook_sender():
+    while True:
+        now = time.time()
+        for item in active_webhooks:
+            # item: {webhook_url, message, interval_seconds, last_sent, guild_id, channel_id}
+            if now - item["last_sent"] >= item["interval_seconds"]:
+                try:
+                    payload = {
+                        "content": item["message"]
+                    }
+                    requests.post(item["webhook_url"], json=payload)
+                    item["last_sent"] = now
+                    print(f"[자동 전송 성공] 웹훅으로 파트너 메시지 발송 완료")
+                except Exception as e:
+                    print(f"[자동 전송 오류] {e}")
+        time.sleep(10)
 
-    @discord.ui.button(label="새로고침", style=discord.ButtonStyle.blurple, emoji="🔄")
-    async def refresh_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("웹훅 상태를 새로고침 완료했습니다.", ephemeral=True)
+threading.Thread(target=background_webhook_sender, daemon=True).start()
 
 # --- Discord 슬래시 명령어 (관리자 전용) ---
-@bot.tree.command(name="서버확인", description="봇이 연동된 웹훅 채널과 최근 발송 정보를 확인합니다.")
+@bot.tree.command(name="카테고리설정", description="파트너 채널들이 생성될 기본 카테고리를 설정합니다.")
+@app_commands.checks.has_permissions(administrator=True)
+async def set_category(interaction: discord.Interaction, category: discord.CategoryChannel):
+    server_settings[interaction.guild.id] = category.id
+    await interaction.response.send_message(f"성공적으로 파트너 채널 카테고리가 **{category.name}**(으)로 설정되었습니다.", ephemeral=True)
+
+@set_category.error
+async def set_category_error(interaction: discord.Interaction, error):
+    if isinstance(error, app_commands.MissingPermissions):
+        await interaction.response.send_message("이 명령어는 서버 관리자만 사용할 수 있습니다.", ephemeral=True)
+
+
+@bot.tree.command(name="서버확인", description="연동된 웹훅 및 서버 상태를 확인합니다.")
 @app_commands.checks.has_permissions(administrator=True)
 async def check_server(interaction: discord.Interaction):
-    if not interaction.guild.me.guild_permissions.manage_webhooks:
-        return await interaction.response.send_message("웹훅을 확인할 권한(웹훅 관리)이 없습니다.", ephemeral=True)
-
-    webhooks = await interaction.guild.webhooks()
-    if not webhooks:
-        return await interaction.response.send_message("이 서버에 연동된 웹훅이 없습니다.", ephemeral=True)
-
-    embed = discord.Embed(title="🌐 서버 웹훅 연동 상태", color=0x00f2fe, timestamp=datetime.now())
-    for wh in webhooks:
-        last_sent = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        embed.add_field(
-            name=f"채널: #{wh.channel.name if wh.channel else '알 수 없음'}",
-            value=f"**웹훅 이름**: {wh.name}\n**최근 발송일**: {last_sent}",
-            inline=False
-        )
-
-    view = WebhookInfoView()
-    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+    embed = discord.Embed(title="🌐 VAXIS 파트너 시스템 현황", color=0x00f2fe, timestamp=datetime.now())
+    embed.add_field(name="등록된 활성 웹훅 수", value=f"{len(active_webhooks)}개", inline=False)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @check_server.error
 async def check_server_error(interaction: discord.Interaction, error):
     if isinstance(error, app_commands.MissingPermissions):
-        await interaction.response.send_message("이 명령어는 관리자만 사용할 수 있습니다.", ephemeral=True)
+        await interaction.response.send_message("이 명령어는 서버 관리자만 사용할 수 있습니다.", ephemeral=True)
+
 
 # --- Flask 라우트 (OAuth2 및 대시보드) ---
 @app.route('/')
@@ -93,7 +100,6 @@ def callback():
     if not code:
         return redirect(url_for('index'))
 
-    # 토큰 교환
     data = {
         'client_id': CLIENT_ID,
         'client_secret': CLIENT_SECRET,
@@ -109,12 +115,10 @@ def callback():
     if not access_token:
         return "OAuth 인증 실패", 400
 
-    # 유저 정보 가져오기
     user_headers = {'Authorization': f'Bearer {access_token}'}
     user_resp = requests.get(f"{API_ENDPOINT}/users/@me", headers=user_headers)
     user_data = user_resp.json()
 
-    # 세션에 사용자 정보 저장 (개인별 독립 세션)
     session['discord_user'] = {
         'id': user_data.get('id'),
         'username': user_data.get('username'),
@@ -136,33 +140,36 @@ def api_webhook_info():
     data = request.json
     webhook_url = data.get('webhook_url')
     partner_name = data.get('partner_name')
-    user_id = user['id']
+    message_content = data.get('message_content')
+    interval_hours = float(data.get('interval_hours', 24)) # 기본 24시간 주기
 
-    if not webhook_url or not partner_name:
-        return jsonify({"error": "웹훅 URL과 파트너명을 모두 입력해주세요."}), 400
+    if not webhook_url or not partner_name or not message_content:
+        return jsonify({"error": "모든 필드를 빠짐없이 입력해주세요."}), 400
 
-    if user_id not in user_database:
-        user_database[user_id] = {}
+    # 즉시 1회 전송 테스트 및 실행
+    try:
+        res = requests.post(webhook_url, json={"content": message_content})
+        if res.status_code not in [200, 204]:
+            return jsonify({"error": "유효하지 않거나 만료된 정보웹훅입니다."}), 400
+    except Exception:
+        return jsonify({"error": "웹훅 전송 중 오류가 발생했습니다."}), 400
 
-    # 웹훅 데이터 저장 및 파트너 자동화 시뮬레이션
-    user_database[user_id][webhook_url] = {
+    # 주기적 발송 리스트에 등록 (초 단위 변환)
+    interval_seconds = interval_hours * 3600
+    active_webhooks.append({
+        "webhook_url": webhook_url,
+        "message": message_content,
+        "interval_seconds": interval_seconds,
+        "last_sent": time.time(),
+        "partner_name": partner_name
+    })
+
+    return jsonify({
+        "success": True,
         "partner_name": partner_name,
         "channel_name": f"partner-{partner_name}",
         "last_sent": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "failed_servers": "없음 (정상 작동 중)"
-    }
-
-    result = user_database[user_id][webhook_url]
-    
-    # 💡 DB 자동 백업 처리 (지정된 백업 채널 ID: 1538060612754735224)
-    # 봇이 실행 중일 때 비동기로 백업 채널에 전송 가능
-    
-    return jsonify({
-        "success": True,
-        "partner_name": result["partner_name"],
-        "channel_name": result["channel_name"],
-        "last_sent": result["last_sent"],
-        "failed_servers": result["failed_servers"]
+        "interval_text": f"{interval_hours}시간 주기"
     })
 
 def run_flask():
@@ -171,8 +178,5 @@ def run_flask():
 
 if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
-    TOKEN = os.environ.get("BOT_TOKEN")
-    if TOKEN:
-        bot.run(TOKEN)
-    else:
-        print("[크리티컬 에러] BOT_TOKEN 환경 변수가 비어있습니다.")
+    TOKEN = os.environ.get("BOT_TOKEN") or "YOUR_BOT_TOKEN"
+    bot.run(TOKEN)
