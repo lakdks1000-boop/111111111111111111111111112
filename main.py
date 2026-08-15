@@ -10,9 +10,9 @@ import requests
 import asyncio
 
 # === 설정 변수 (환경 변수에서 가져오기) ===
-BOT_TOKEN = os.environ.get('BOT_TOKEN', '여기에_봇_토큰_입력')
-CLIENT_ID = os.environ.get('CLIENT_ID', '여기에_클라이언트_ID_입력')
-CLIENT_SECRET = os.environ.get('CLIENT_SECRET', '여기에_클라이언트_시크릿_입력')
+BOT_TOKEN = os.environ.get('BOT_TOKEN', 'MTUzODA2MjQ1Mjc0OTYzMTYwOQ.GDBAJ_.WOJ39dXALnE8dD98q341jekVMYJuV1a45_s05s')
+CLIENT_ID = os.environ.get('CLIENT_ID', '1538062452749631609')
+CLIENT_SECRET = os.environ.get('CLIENT_SECRET', 'asA-YyDw8HRTL4lZK-H5zlyD8Xa7qtFF')
 REDIRECT_URI = os.environ.get('REDIRECT_URI', 'http://localhost:5000/callback')
 BACKUP_CHANNEL_ID = 1538060612754735224
 DB_FILE = 'partner.db'
